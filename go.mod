@@ -1,6 +1,6 @@
 module cleanarch
 
-go 1.25
+go 1.22
 
 require (
 	github.com/99designs/gqlgen v0.17.45

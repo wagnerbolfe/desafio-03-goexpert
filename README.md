@@ -1,5 +1,20 @@
 # Sistema de Pedidos com Clean Architecture (Go)
 
+Execução rápida (somente Docker Compose)
+- Pré‑requisitos: Docker e Docker Compose instalados.
+- Passos:
+  1) Suba tudo com um único comando:
+     - docker compose up -d
+  2) Aguarde os containers ficarem saudáveis (mysql, rabbitmq, ordersystem):
+     - docker compose ps
+     - opcional: docker compose logs -f app (ou ordersystem)
+  3) Teste usando o arquivo api.http (VS Code ou IDEs JetBrains com REST Client):
+     - Abra o arquivo api.http na raiz do projeto
+     - Envie a requisição POST /order e depois GET /order
+     - Os exemplos já apontam para http://127.0.0.1:8000
+
+Pronto. Não é necessário executar comandos adicionais além do docker compose up -d para rodar todo o ambiente e testar com o api.http.
+
 Visão geral
 - Este repositório implementa um sistema de pedidos seguindo os princípios de Clean Architecture em Go.
 - Ele expõe três interfaces simultaneamente:
@@ -9,7 +24,7 @@ Visão geral
 - A infraestrutura inclui MySQL para persistência e RabbitMQ para publicar eventos OrderCreated.
 
 Stack técnico
-- Linguagem: Go 1.25+
+- Linguagem: Go 1.22
 - Frameworks/Bibliotecas:
   - Web: github.com/go-chi/chi/v5
   - GraphQL: github.com/99designs/gqlgen
@@ -28,62 +43,32 @@ Ponto de entrada
   - Servidor GraphQL e Playground
 
 Requisitos
-- Go 1.25 ou superior
+- Go 1.22 ou superior
 - Docker e Docker Compose
 
-Primeiros passos
-1) Clonar e instalar dependências
-- Garanta que os módulos estejam em ordem
-  - go mod tidy
 
-2) Subir a infraestrutura
-- Usando Docker Compose (recomendado para desenvolvimento):
-  - docker-compose up -d
+- Usando Docker Compose:
+  - docker compose up -d
   - Serviços:
     - MySQL 5.7 em localhost:3306 (DB: orders, usuário: root, senha: root)
-    - RabbitMQ em localhost:5672 com UI de gerenciamento em http://localhost:15672 (guest/guest)
-
-3) Configurar ambiente
-- O app lê configurações de um arquivo .env na raiz do repositório (Viper).
+    - RabbitMQ em localhost:5672 com UI de gerenciamento em http://localhost:15672 (admin/admin)
 
 Notas sobre portas
 - REST: http.ListenAndServe é chamado com o valor de WEB_SERVER_PORT como está. Use um valor como :8000 ou 0.0.0.0:8000.
 - gRPC: o servidor escuta em :<GRPC_SERVER_PORT>. Informe apenas o número da porta (ex.: 50051).
 - GraphQL: http.ListenAndServe(":"+GRAPHQL_SERVER_PORT). Informe apenas o número da porta (ex.: 8080).
 
-TODOs importantes
-- A URL do RabbitMQ está fixa como amqp://guest:guest@localhost:5672/ em cmd/ordersystem/main.go (getRabbitMQChannel). TODO: mover para configuração (.env) para maior flexibilidade.
-- O arquivo de licença não está presente. TODO: adicionar um arquivo LICENSE esclarecendo os termos de uso.
-
-Executar a aplicação
-- Com Makefile:
-  - make start
-- Ou diretamente com Go:
-  - go run cmd/ordersystem/main.go cmd/ordersystem/wire_gen.go
-
-Serviços disponíveis após iniciar
-- API REST (Chi)
-  - Endereço base: http://localhost:8000 se usar WEB_SERVER_PORT=:8000
-  - Endpoints:
-    - POST /order — cria um pedido
-    - GET  /order — lista pedidos
-- GraphQL
-  - Playground: http://localhost:8080/
-  - Endpoint:   http://localhost:8080/query
-- gRPC
-  - Escuta em localhost:50051 por padrão no exemplo do .env.
-
 Exemplos rápidos REST
 - Veja o arquivo api.http para exemplos prontos para uso em REST Client (ex.: VS Code / IDEs JetBrains):
-  - POST http://localhost:8000/order
-  - GET  http://localhost:8000/order
+  - POST http://127.0.0.1:8000/order
+  - GET  http://127.0.0.1:8000/order
 
 Exemplos de uso gRPC
 - Usando grpcurl (instale separadamente):
-  - Descobrir serviços: grpcurl -plaintext localhost:50051 list
-  - Descrever serviço: grpcurl -plaintext localhost:50051 list cleanarch.internal.infra.grpc.pb.OrderService
+  - Descobrir serviços: grpcurl -plaintext 127.0.0.1:50051 list
+  - Descrever serviço: grpcurl -plaintext 127.0.0.1:50051 list cleanarch.internal.infra.grpc.pb.OrderService
   - Invocar (exemplo — ajuste pacote/método se tiver mudado):
-    - grpcurl -plaintext -d '{"id":"<uuid>","price":100,"tax":10}' localhost:50051 cleanarch.internal.infra.grpc.pb.OrderService/CreateOrder
+      - grpcurl -plaintext -d '{"id":"<uuid>","price":100,"tax":10}' 127.0.0.1:50051 cleanarch.internal.infra.grpc.pb.OrderService/CreateOrder
 
 Exemplo de uso GraphQL
 - Abra o Playground em http://localhost:8080/
@@ -92,7 +77,7 @@ Exemplo de uso GraphQL
   - query para listar pedidos
 
 Variáveis de ambiente
-- A aplicação utiliza as seguintes variáveis (via Viper e .env):
+- A aplicação utiliza as seguintes variáveis (via Viper: ambiente, .env e defaults):
   - DB_DRIVER
   - DB_HOST
   - DB_PORT
@@ -102,17 +87,7 @@ Variáveis de ambiente
   - WEB_SERVER_PORT
   - GRPC_SERVER_PORT
   - GRAPHQL_SERVER_PORT
-- TODO: Adicionar RABBITMQ_URL (e alterar o código para lê-la) em vez de manter fixo no código.
-
-Scripts e ferramentas
-- Alvos do Makefile:
-  - start: go run cmd/ordersystem/main.go cmd/ordersystem/wire_gen.go
-- Serviços do Docker Compose:
-  - mysql (5.7)
-  - rabbitmq (3-management)
-- Ferramentas de geração de código no repositório:
-  - wire (google/wire) — DI gerado em cmd/ordersystem/wire_gen.go. Não é necessário executar a geração para rodar, a menos que você altere o wire.go.
-  - gqlgen — Artefatos do GraphQL já gerados; gere novamente apenas se modificar schema/resolvers.
+  - RABBITMQ_URL
 
 Testes
 - Executar todos os testes:

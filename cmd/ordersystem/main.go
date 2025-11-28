@@ -40,7 +40,7 @@ func main() {
 		panic(err)
 	}
 
-	rabbitMQChannel := getRabbitMQChannel()
+	rabbitMQChannel := getRabbitMQChannel(configs.RabbitMQURL)
 
 	eventDispatcher := events.NewEventDispatcher()
 	eventDispatcher.Register("OrderCreated", &handler.OrderCreatedHandler{
@@ -83,8 +83,8 @@ func main() {
 	}
 }
 
-func getRabbitMQChannel() *amqp.Channel {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") //make it an env config
+func getRabbitMQChannel(rabbitURL string) *amqp.Channel {
+	conn, err := amqp.Dial(rabbitURL)
 	if err != nil {
 		panic(err)
 	}

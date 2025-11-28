@@ -12,22 +12,32 @@ type Conf struct {
 	WebServerPort     string `mapstructure:"WEB_SERVER_PORT"`
 	GRPCServerPort    string `mapstructure:"GRPC_SERVER_PORT"`
 	GraphQLServerPort string `mapstructure:"GRAPHQL_SERVER_PORT"`
+	RabbitMQURL       string `mapstructure:"RABBITMQ_URL"`
 }
 
 func LoadConfig(path string) (*Conf, error) {
-	var cfg *Conf
+	viper.SetDefault("DB_DRIVER", "mysql")
+	viper.SetDefault("DB_HOST", "mysql")
+	viper.SetDefault("DB_PORT", "3306")
+	viper.SetDefault("DB_USER", "root")
+	viper.SetDefault("DB_PASSWORD", "root")
+	viper.SetDefault("DB_NAME", "orders")
+	viper.SetDefault("WEB_SERVER_PORT", ":8000")
+	viper.SetDefault("GRPC_SERVER_PORT", "50051")
+	viper.SetDefault("GRAPHQL_SERVER_PORT", "8080")
+	viper.SetDefault("RABBITMQ_URL", "amqp://admin:admin@rabbitmq:5672/")
+
 	viper.SetConfigName("app_config")
 	viper.SetConfigType("env")
 	viper.AddConfigPath(path)
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
+
+	_ = viper.ReadInConfig()
+
+	var cfg Conf
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, err
 	}
-	err = viper.Unmarshal(&cfg)
-	if err != nil {
-		panic(err)
-	}
-	return cfg, err
+	return &cfg, nil
 }
